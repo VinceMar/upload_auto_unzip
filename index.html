@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="lib/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #upload-button {
+            display: none;
+        }
+
+        #alert-bar {
+            height: 75px;
+            background: #ffeaa7;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: white;
+            font-size: 24px;
+            padding-left: 40px;
+            line-height: 75px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-2">
+            <div id="alert-bar"></div>
+            <label for="">请选择你的web作业压缩包<input type="file" id="file" class="form-control" name="file"></label>
+            <div class="file-info"></div>
+            <button id="upload-button" class="btn btn-primary">上传</button>
+        </div>
+    </div>
+</div>
+
+<script src="lib/jquery.js"></script>
+<script>
+    $().ready(function () {
+
+        let file;
+        let url = "http://localhost:8888";
+
+        $('#file').change((e) => {
+            console.log(e);
+            if (e.target.files[0]) {
+                file = e.target.files[0];
+                let fileName = file.name;
+                let fileNameHtml = $(`<p>文件名：${file.name}</p>`);
+                let fileSizeHtml = $(`<p>文件大小：${file.size}</p>`);
+                let fileType = fileName.substring(fileName.lastIndexOf('.') + 1);
+                if (fileType === '7z' || fileType === 'zip' || fileType === 'rar') {
+                    $('.file-info').append(fileNameHtml, fileSizeHtml);
+                    $('#upload-button').css('display', 'block');
+                } else {
+                    alert('请上传压缩包！');
+                    delInputFile(file);
+                }
+            }
+        });
+
+        $('#upload-button').click(() => {
+            let formData = new FormData();
+            formData.append('stuFile', file);
+            ajax(`${url}/upload.php`, formData, () => {
+                $('#alert-bar').css({'display': 'block', 'background':'#ffeaa7'}).html('上传中');
+            }).then(value => {
+                console.log(value)
+                let result = JSON.parse(value);
+                if (result[0].result === 'success') {
+                    $('#alert-bar').css({'display': 'block', 'background':'#55efc4'}).html('上传成功！');
+                    let resultUrl = $(`<p><a href=${result[0].url}>查看结果</a></p>`);
+                    $('.file-info').append(resultUrl);
+                } else {
+                    $('#alert-bar').css({'display': 'block', 'background':'rgb(217, 46, 46)'}).html('上传失败！');
+                }
+            });
+        });
+    });
+    
+    function delInputFile(file) {
+        $('#file').val('');
+        file = null;
+    }
+
+    function ajax(url, data, animateFunc) {
+        animateFunc();
+        return new Promise((resolve, reject) => {
+           let xhr = new XMLHttpRequest();
+           xhr.open('POST', url);
+           xhr.onload = () => {
+               if (xhr.status === 200) {
+                   resolve(xhr.responseText);
+               } else {
+                   reject('error');
+               }
+           };
+           xhr.send(data);
+        });
+    }
+</script>
+</body>
+</html>
